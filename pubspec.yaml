@@ -59,6 +59,21 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  fonts:
+    - family: SpoqaHanSansNeo
+      fonts:
+        - asset: assets/fonts/SpoqaHanSansNeo-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/SpoqaHanSansNeo-Light.ttf
+          weight: 200
+        - asset: assets/fonts/SpoqaHanSansNeo-Regular.ttf
+          weight: 300
+        - asset: assets/fonts/SpoqaHanSansNeo-Medium.ttf
+          weight: 400
+        - asset: assets/fonts/SpoqaHanSansNeo-Bold.ttf
+          weight: 500
+
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

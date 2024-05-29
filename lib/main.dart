@@ -6,6 +6,9 @@ void main() {
   runApp(
       ProviderScope(
         child: MaterialApp(
+          theme: ThemeData(
+            fontFamily: 'SqoqaHanSans'
+          ),
           home: const RootTab(),
           debugShowCheckedModeBanner: false,
         ),
