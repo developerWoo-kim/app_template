@@ -1,12 +1,15 @@
 import 'package:app_template/common/component/button/enum/round_degree.dart';
+import 'package:app_template/common/component/text/body_text.dart';
 import 'package:app_template/common/const/colors.dart';
 import 'package:flutter/material.dart';
 
 class BasicElevatedButton extends StatelessWidget {
   final String title;
+  final RoundDegree? roundDegree;
   final VoidCallback callback;
   const BasicElevatedButton({
     required this.title,
+    this.roundDegree,
     required this.callback,
     super.key
   });
@@ -15,18 +18,17 @@ class BasicElevatedButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: BODY_TEXT_COLOR4,
+          backgroundColor: PRIMARY_COLOR_04,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(RoundDegree.HIGH.value),
+            borderRadius: BorderRadius.circular(roundDegree != null ? roundDegree!.value : RoundDegree.NONE.value),
           ),
         ),
         onPressed: callback,
-        child: Text(
-          title,
-          style: TextStyle(
-              color: Colors.black
-          ),
+        child: BodyText(
+          title: title,
+          textSize: BodyTextSize.MEDIUM,
+          color: BODY_TEXT_COLOR_02,
+          fontWeight: FontWeight.w500,
         )
     );
   }

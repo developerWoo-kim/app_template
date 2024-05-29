@@ -120,8 +120,8 @@ class _RootTabState extends State<RootTab> with TickerProviderStateMixin {
           ),
           child: BottomNavigationBar(
             backgroundColor: Colors.white,
-            selectedItemColor: PRIMARY_COLOR,
-            unselectedItemColor: BODY_TEXT_COLOR,
+            selectedItemColor: PRIMARY_COLOR_01,
+            unselectedItemColor: BODY_TEXT_COLOR_01,
             selectedFontSize: 10,
             unselectedFontSize: 10,
             type: BottomNavigationBarType.fixed, // 디폴트 : shifting -> 탭 메뉴를 클릭할 때 마다 선택된 메뉴가 확대됨

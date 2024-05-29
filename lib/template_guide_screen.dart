@@ -100,9 +100,7 @@ class TemplateGuideScreen extends StatelessWidget {
             ],
           ),
           Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('가나다라마바사아자차카타파하',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
-          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('가나다라마바사아자차카타파하',style: TextStyle(fontFamily: 'SqoqaHanSans', fontSize: 16.0,fontWeight: FontWeight.w500),),],),
           Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('동네방네',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
-          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('동네방네',style: TextStyle(fontFamily: 'SqoqaHanSans',fontSize: 16.0,fontWeight: FontWeight.w500),),],),
         ],
       ),
     );

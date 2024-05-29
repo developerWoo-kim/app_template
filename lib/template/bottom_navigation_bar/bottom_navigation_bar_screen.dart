@@ -1,6 +1,7 @@
 import 'package:app_template/common/component/bottom_navigation/basic_bottom_navigation_bar.dart';
 import 'package:app_template/common/component/button/enum/round_degree.dart';
 import 'package:app_template/common/component/button/primary_elevated_button.dart';
+import 'package:app_template/common/component/text/body_text.dart';
 import 'package:app_template/common/const/colors.dart';
 import 'package:app_template/common/layout/default_layout.dart';
 import 'package:app_template/common/utils/app_bar_util.dart';
@@ -18,12 +19,12 @@ class BottomNavigationBarScreen extends StatelessWidget {
         content: Column(
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              padding: EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('111'),
-                  Text('111', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),),
+                  BodyText(title: '총 주문금액', textSize: BodyTextSize.MEDIUM,color: BODY_TEXT_COLOR_03,),
+                  BodyText(title: '260,000원', textSize: BodyTextSize.BOLD,color: BODY_TEXT_COLOR_GREEN_01, fontWeight: FontWeight.w500,),
                 ],
               ),
             ),
@@ -31,7 +32,7 @@ class BottomNavigationBarScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: PrimaryElevatedButton(
-                    title: '버튼',
+                    title: '주문하기',
                     roundDegree: RoundDegree.HIGH,
                     callback: (){},
                   )

@@ -25,7 +25,7 @@ class DialogUtil {
               style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 17,
-                  color: BODY_TEXT_COLOR4
+                  color: BODY_TEXT_COLOR_02
               ),
             ),
           )

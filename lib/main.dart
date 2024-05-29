@@ -7,7 +7,7 @@ void main() {
       ProviderScope(
         child: MaterialApp(
           theme: ThemeData(
-            fontFamily: 'SqoqaHanSans'
+            fontFamily: 'SpoqaHanSansNeo'
           ),
           home: const RootTab(),
           debugShowCheckedModeBanner: false,

@@ -2,6 +2,8 @@ import 'package:app_template/common/const/colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../component/text/title_text.dart';
+
 enum AppBarType {
   TEXT_TITLE,
   MAP_TAB_BAR,
@@ -21,7 +23,7 @@ class AppBarUtil {
     switch (type) {
       case AppBarType.TEXT_TITLE:
         return AppBar(
-          title: Text(title!),
+          title: TitleText(title: title!),
         );
       case AppBarType.MAP_TAB_BAR:
         return AppBar(
