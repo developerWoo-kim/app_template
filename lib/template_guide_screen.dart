@@ -1,5 +1,7 @@
+import 'package:app_template/common/utils/bottom_modal_sheet_util.dart';
 import 'package:app_template/common/utils/dialog_util.dart';
 import 'package:app_template/template/bottom_navigation_bar/bottom_navigation_bar_screen.dart';
+import 'package:app_template/template/modal_bottom_sheet/draggable_modal_bottom_sheet_screen.dart';
 import 'package:flutter/material.dart';
 
 class TemplateGuideScreen extends StatelessWidget {
@@ -82,7 +84,7 @@ class TemplateGuideScreen extends StatelessWidget {
               )
             ],
           ),
-          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('하단 시트',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
+          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('하단 네비게이션 시트',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
           Row(
             children: [
               Expanded(
@@ -95,6 +97,46 @@ class TemplateGuideScreen extends StatelessWidget {
                     );
                   },
                   child: Text('Basic BottomNavigationBar'),
+                ),
+              )
+            ],
+          ),
+          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('하단 모달 시트',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    BottomModalSheetUtil.showCustomModalBottomSheet(
+                        context: context,
+                        content: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Text('하단 바텀 시트')
+                              ],
+                            )
+                          ],
+                        )
+                    );
+                  },
+                  child: Text('Basic ModalBottomSheet'),
+                ),
+              )
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => DraggableModalBottomSheetScreen(),
+                      ),
+                    );
+                  },
+                  child: Text('Draggable ModalBottomSheet'),
                 ),
               )
             ],

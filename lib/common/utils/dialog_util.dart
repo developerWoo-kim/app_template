@@ -1,6 +1,6 @@
 import 'package:app_template/common/component/button/basic_elevated_button.dart';
 import 'package:app_template/common/component/button/primary_elevated_button.dart';
-import 'package:app_template/common/const/colors.dart';
+import 'package:app_template/common/component/text/body_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
@@ -20,17 +20,21 @@ class DialogUtil {
           borderRadius: BorderRadius.circular(5)
       ),
       title: title != null
-        ? Center(
-            child: Text(title,
-              style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 17,
-                  color: BODY_TEXT_COLOR_02
+        ? Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              BodyText(
+                title: title,
+                textSize: BodyTextSize.BOLD,
+                fontWeight: FontWeight.w500,
               ),
-            ),
+            ],
           )
         : null,
-      content: Text(content),
+      content: BodyText(
+        title: content,
+        textSize: BodyTextSize.MEDIUM,
+      ),
       actions: actions,
     );
   }
@@ -92,7 +96,7 @@ class DialogUtil {
                         callback: cancelCallBack,
                       )
                   ),
-                  SizedBox(width: 12.0,),
+                  const SizedBox(width: 12.0,),
                   Expanded(
                       child: PrimaryElevatedButton(
                         title: confirmText,

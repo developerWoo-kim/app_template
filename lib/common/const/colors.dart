@@ -4,6 +4,7 @@ const PRIMARY_COLOR_01 = Color(0xFFED6D11);
 const PRIMARY_COLOR_02 = Color(0xFFE18337);
 const PRIMARY_COLOR_03 = Color(0xFF1F1F1F);
 const PRIMARY_COLOR_04 = Color(0xFFFFFFFF);
+const PRIMARY_COLOR_05 = Color(0xFF21495E);
 
 // 글자 색상
 const BODY_TEXT_COLOR_01 = Color(0xFF868686);
@@ -21,3 +22,5 @@ const GREY_02 = Color(0xFF434343);
 
 
 const BLACK_02 = Color(0xFF1F1F1F);
+
+const LINE_CLOR_01 = Color(0xFFE5EAF1);
