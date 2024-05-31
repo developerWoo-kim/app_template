@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 class BasicBottomNavigationBar extends StatelessWidget {
   final Widget content;
+  final Color backgroundColor;
   const BasicBottomNavigationBar({
     required this.content,
+    required this.backgroundColor,
     super.key
   });
 
@@ -12,7 +14,7 @@ class BasicBottomNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
         decoration: BoxDecoration(
-          color: BLACK_02,
+          color: backgroundColor,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(30),
             topRight: Radius.circular(30),

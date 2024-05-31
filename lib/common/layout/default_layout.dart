@@ -2,13 +2,13 @@ import 'package:app_template/common/const/colors.dart';
 import 'package:flutter/material.dart';
 
 class DefaultLayout extends StatelessWidget {
-  final AppBar appBar;
+  final AppBar? appBar;
   final Widget body;
   final Color? backgroundColor;
   final Widget? bottomNavigationBar;
 
   const DefaultLayout({
-    required this.appBar,
+    this.appBar,
     required this.body,
     this.backgroundColor,
     this.bottomNavigationBar,
@@ -19,7 +19,7 @@ class DefaultLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      backgroundColor: backgroundColor ?? WHITE_01,
+      backgroundColor: backgroundColor ?? PRIMARY_COLOR_04,
       appBar: appBar,
       body: body,
       bottomNavigationBar: bottomNavigationBar,

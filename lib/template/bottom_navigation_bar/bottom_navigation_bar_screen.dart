@@ -1,8 +1,8 @@
 import 'package:app_template/common/component/bottom_navigation/basic_bottom_navigation_bar.dart';
-import 'package:app_template/common/component/button/enum/round_degree.dart';
-import 'package:app_template/common/component/button/primary_elevated_button.dart';
+import 'package:app_template/common/component/button/custom_elevated_button.dart';
 import 'package:app_template/common/component/text/body_text.dart';
 import 'package:app_template/common/const/colors.dart';
+import 'package:app_template/common/const/radius_type.dart';
 import 'package:app_template/common/layout/default_layout.dart';
 import 'package:app_template/common/utils/app_bar_util.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +16,7 @@ class BottomNavigationBarScreen extends StatelessWidget {
       appBar: AppBarUtil.buildAppBar(AppBarType.TEXT_TITLE, title: 'BottomNavigationBar'),
       body: Container(),
       bottomNavigationBar: BasicBottomNavigationBar(
+        backgroundColor: PRIMARY_COLOR_05,
         content: Column(
           children: [
             Padding(
@@ -23,17 +24,28 @@ class BottomNavigationBarScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  BodyText(title: '총 주문금액', textSize: BodyTextSize.MEDIUM,color: BODY_TEXT_COLOR_03,),
-                  BodyText(title: '260,000원', textSize: BodyTextSize.BOLD,color: BODY_TEXT_COLOR_GREEN_01, fontWeight: FontWeight.w500,),
-                ],
+                  BodyText(
+                    title: '총 주문금액',
+                    textSize: BodyTextSize.MEDIUM,
+                    color: BODY_TEXT_COLOR_01,
+                  ),
+                  BodyText(
+                    title: '260,000원',
+                    textSize: BodyTextSize.BOLD,
+                    color: BODY_TEXT_COLOR_GREEN_01,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  ],
               ),
             ),
             Row(
               children: [
                 Expanded(
-                  child: PrimaryElevatedButton(
+                  child: CustomElevatedButton(
                     title: '주문하기',
-                    roundDegree: RoundDegree.HIGH,
+                    roundDegree: RadiusType.HIGH,
+                    backgroundColor: PRIMARY_COLOR_01,
+                    textColor: BODY_TEXT_COLOR_01,
                     callback: (){},
                   )
                 )

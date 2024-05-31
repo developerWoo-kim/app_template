@@ -8,18 +8,14 @@ enum AppBarType {
   TEXT_TITLE,
   MAP_TAB_BAR,
   MAP_SEARCH_BAR,
+  NONE,
 }
 
 class AppBarUtil {
 
-  static AppBar buildAppBar(AppBarType type, {
+  static AppBar? buildAppBar(AppBarType type, {
     String? title,
   }) {
-    final borderStyle = OutlineInputBorder(
-        borderRadius: BorderRadius.circular(25),
-        borderSide: BorderSide(color: BODY_TEXT_COLOR5)
-    );
-
     switch (type) {
       case AppBarType.TEXT_TITLE:
         return AppBar(
@@ -34,8 +30,10 @@ class AppBarUtil {
             ],
           ),
         );
+      case AppBarType.NONE:
+        return null;
       default:
-        throw ArgumentError('Invalid widget type');
+        return null;
     }
   }
 }

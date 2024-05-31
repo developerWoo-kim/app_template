@@ -49,7 +49,7 @@ class DraggableModalBottomSheet extends StatelessWidget {
         child: Container(
           height: 5.0,
           decoration: BoxDecoration(
-            color: LINE_CLOR_01,
+            color: LINE_COLOR_01,
             borderRadius: const BorderRadius.all(Radius.circular(2.5)),
           ),
         ),

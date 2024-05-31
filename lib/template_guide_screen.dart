@@ -1,7 +1,11 @@
+import 'package:app_template/common/component/button/custom_elevated_button.dart';
+import 'package:app_template/common/component/text/body_text.dart';
+import 'package:app_template/common/const/colors.dart';
 import 'package:app_template/common/utils/bottom_modal_sheet_util.dart';
 import 'package:app_template/common/utils/dialog_util.dart';
 import 'package:app_template/template/bottom_navigation_bar/bottom_navigation_bar_screen.dart';
 import 'package:app_template/template/modal_bottom_sheet/draggable_modal_bottom_sheet_screen.dart';
+import 'package:app_template/template/naver_map/naver_map_template_screen.dart';
 import 'package:flutter/material.dart';
 
 class TemplateGuideScreen extends StatelessWidget {
@@ -108,12 +112,40 @@ class TemplateGuideScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     BottomModalSheetUtil.showCustomModalBottomSheet(
+                        // showModalBar: true,
                         context: context,
                         content: Column(
                           children: [
                             Row(
                               children: [
-                                Text('하단 바텀 시트')
+                                BodyText(
+                                  title: '타이틀',
+                                  textSize: BodyTextSize.BOLD,
+                                  fontWeight: FontWeight.w500,
+                                )
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: BodyText(
+                                    title: '본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.본문입니다.',
+                                    textSize: BodyTextSize.REGULAR,
+                                    fontWeight: FontWeight.w400,
+                                  )
+                                )
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CustomElevatedButton(
+                                    title: '버튼',
+                                    backgroundColor: PRIMARY_COLOR_03,
+                                    textColor: BODY_TEXT_COLOR_01,
+                                    callback: () {},
+                                  ),
+                                )
                               ],
                             )
                           ],
@@ -141,8 +173,23 @@ class TemplateGuideScreen extends StatelessWidget {
               )
             ],
           ),
-          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('가나다라마바사아자차카타파하',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
-          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('동네방네',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
+          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('네이버 맵',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => NaverMapTemplateScreen(),
+                      ),
+                    );
+                  },
+                  child: Text('Naver Map'),
+                ),
+              )
+            ],
+          ),
         ],
       ),
     );

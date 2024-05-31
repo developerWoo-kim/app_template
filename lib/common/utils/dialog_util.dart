@@ -1,6 +1,6 @@
-import 'package:app_template/common/component/button/basic_elevated_button.dart';
-import 'package:app_template/common/component/button/primary_elevated_button.dart';
+import 'package:app_template/common/component/button/custom_elevated_button.dart';
 import 'package:app_template/common/component/text/body_text.dart';
+import 'package:app_template/common/const/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
@@ -57,8 +57,10 @@ class DialogUtil {
               Row(
                 children: [
                   Expanded(
-                      child: PrimaryElevatedButton(
+                      child: CustomElevatedButton(
                         title: confirmText,
+                        backgroundColor: PRIMARY_COLOR_01,
+                        textColor: BODY_TEXT_COLOR_01,
                         callback: confirmCallBack,
                       )
                   )
@@ -91,15 +93,19 @@ class DialogUtil {
                 // mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   Expanded(
-                      child: BasicElevatedButton(
+                      child: CustomElevatedButton(
                         title: cancelText,
+                        backgroundColor: PRIMARY_COLOR_04,
+                        textColor: BODY_TEXT_COLOR_02,
                         callback: cancelCallBack,
                       )
                   ),
                   const SizedBox(width: 12.0,),
                   Expanded(
-                      child: PrimaryElevatedButton(
+                      child: CustomElevatedButton(
                         title: confirmText,
+                        backgroundColor: PRIMARY_COLOR_01,
+                        textColor: BODY_TEXT_COLOR_01,
                         callback: confirmCallBack,
                       )
                   )
