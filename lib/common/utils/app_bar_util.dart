@@ -19,10 +19,12 @@ class AppBarUtil {
     switch (type) {
       case AppBarType.TEXT_TITLE:
         return AppBar(
+          backgroundColor: PRIMARY_COLOR_04,
           title: TitleText(title: title!),
         );
       case AppBarType.MAP_TAB_BAR:
         return AppBar(
+          backgroundColor: PRIMARY_COLOR_04,
           bottom: TabBar(
             tabs: [
               Tab(text: '주소보기',),

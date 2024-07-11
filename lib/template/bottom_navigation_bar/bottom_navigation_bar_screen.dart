@@ -31,7 +31,7 @@ class BottomNavigationBarScreen extends StatelessWidget {
                   ),
                   BodyText(
                     title: '260,000원',
-                    textSize: BodyTextSize.BOLD,
+                    textSize: BodyTextSize.LARGE,
                     color: BODY_TEXT_COLOR_GREEN_01,
                     fontWeight: FontWeight.w500,
                   ),

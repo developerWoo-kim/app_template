@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 enum BodyTextSize {
   REGULAR(14),
   MEDIUM(16),
-  BOLD(18);
+  LARGE(18);
 
   const BodyTextSize(this.value);
   final double value;

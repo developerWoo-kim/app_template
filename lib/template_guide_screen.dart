@@ -6,16 +6,51 @@ import 'package:app_template/common/utils/dialog_util.dart';
 import 'package:app_template/template/bottom_navigation_bar/bottom_navigation_bar_screen.dart';
 import 'package:app_template/template/modal_bottom_sheet/draggable_modal_bottom_sheet_screen.dart';
 import 'package:app_template/template/naver_map/naver_map_template_screen.dart';
+import 'package:app_template/template/sample/adruck/ad_driving_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import 'template/sample/adruck/auto_driving_option_setting_screen.dart';
 
 class TemplateGuideScreen extends StatelessWidget {
   const TemplateGuideScreen({super.key});
+
+  Future<bool> _checkBlePermission() async {
+    final access = Permission.bluetoothScan.request();
+    return true;
+  }
+  Future<bool> _checkLocationPermission() async {
+    final access = await Permission.location.status;
+    debugPrint('Access ::: ${access.name}');
+    switch (access) {
+      case PermissionStatus.denied:
+      case PermissionStatus.restricted:
+        var result = await Permission.locationWhenInUse.request();
+        debugPrint('Result ::: ${result.name}');
+        if(result.isDenied || result.isPermanentlyDenied) {
+          return false;
+        }
+        return true;
+      case PermissionStatus.permanentlyDenied:
+        openAppSettings();
+        return false;
+      case PermissionStatus.granted:
+        var result = await Permission.locationWhenInUse.request();
+        debugPrint('Result ::: ${result.name}');
+        if(result.isDenied || result.isPermanentlyDenied) {
+          return false;
+        }
+        return true;
+      default:
+        return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
+      child: ListView(
         children: [
           Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('Dialog',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
           Row(
@@ -120,7 +155,7 @@ class TemplateGuideScreen extends StatelessWidget {
                               children: [
                                 BodyText(
                                   title: '타이틀',
-                                  textSize: BodyTextSize.BOLD,
+                                  textSize: BodyTextSize.LARGE,
                                   fontWeight: FontWeight.w500,
                                 )
                               ],
@@ -186,6 +221,38 @@ class TemplateGuideScreen extends StatelessWidget {
                     );
                   },
                   child: Text('Naver Map'),
+                ),
+              )
+            ],
+          ),
+          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('권한',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final bleAccess = await _checkBlePermission();
+                    final access = await _checkLocationPermission();
+
+                  },
+                  child: Text('권한'),
+                ),
+              )
+            ],
+          ),
+          Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text('광고 운행(샘플)',style: TextStyle(fontSize: 16.0,fontWeight: FontWeight.w500),),],),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AdDrivingScreen(),
+                      ),
+                    );
+                  },
+                  child: Text('광고 운행'),
                 ),
               )
             ],

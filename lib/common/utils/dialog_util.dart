@@ -25,7 +25,7 @@ class DialogUtil {
             children: [
               BodyText(
                 title: title,
-                textSize: BodyTextSize.BOLD,
+                textSize: BodyTextSize.LARGE,
                 fontWeight: FontWeight.w500,
               ),
             ],
