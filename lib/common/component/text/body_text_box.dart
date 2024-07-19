@@ -26,7 +26,7 @@ class BodyTextBox extends StatelessWidget {
             borderRadius: BorderRadius.circular(borderCircular!),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.0),
           child: Row(
             children: [
               if(icon != null)

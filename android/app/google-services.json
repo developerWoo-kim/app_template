@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "390788652706",
+    "project_id": "app-template-b727e",
+    "storage_bucket": "app-template-b727e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:390788652706:android:89ce05dced9d0f3ef2c1fb",
+        "android_client_info": {
+          "package_name": "com.gwkim.app_template"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdL1vVjtPTip1CVjkIes6AjQILwRQByY4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

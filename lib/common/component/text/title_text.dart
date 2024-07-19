@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app_template/common/const/colors.dart';
 import 'package:flutter/material.dart';
 
@@ -18,9 +20,9 @@ class TitleText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(title,
       style: TextStyle(
-        fontSize: 20,
+        fontSize: Platform.isIOS ? 19 : 18,
         color: color ?? BODY_TEXT_COLOR_02,
-        fontWeight: fontWeight ?? FontWeight.w400,
+        fontWeight: fontWeight ?? FontWeight.w500,
       ),
     );
   }

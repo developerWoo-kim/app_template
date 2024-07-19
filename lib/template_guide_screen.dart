@@ -19,6 +19,7 @@ class TemplateGuideScreen extends StatelessWidget {
     final access = Permission.bluetoothScan.request();
     return true;
   }
+
   Future<bool> _checkLocationPermission() async {
     final access = await Permission.location.status;
     debugPrint('Access ::: ${access.name}');
@@ -40,6 +41,29 @@ class TemplateGuideScreen extends StatelessWidget {
         if(result.isDenied || result.isPermanentlyDenied) {
           return false;
         }
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  Future<bool> _checkIgnoreBatteryOptimization() async {
+    final access = await Permission.ignoreBatteryOptimizations.status;
+    print('batteryOptimization :::: $access');
+
+    switch (access) {
+      case PermissionStatus.denied:
+      case PermissionStatus.restricted:
+        var result = await Permission.ignoreBatteryOptimizations.request();
+        debugPrint('Result ::: ${result.name}');
+        if(result.isDenied || result.isPermanentlyDenied) {
+          return false;
+        }
+        return true;
+      case PermissionStatus.permanentlyDenied:
+        openAppSettings();
+        return false;
+      case PermissionStatus.granted:
         return true;
       default:
         return false;
@@ -236,6 +260,18 @@ class TemplateGuideScreen extends StatelessWidget {
 
                   },
                   child: Text('권한'),
+                ),
+              )
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final bleAccess = await _checkIgnoreBatteryOptimization();
+                  },
+                  child: Text('배터리 소모 예외 앱 권한'),
                 ),
               )
             ],

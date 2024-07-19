@@ -17,7 +17,16 @@ const BODY_TEXT_COLOR_01 = Color(0xFFFFFFFF);
 const BODY_TEXT_COLOR_02 = Color(0xFF000000);
 const BODY_TEXT_COLOR_03 = Color(0xFF868686);
 
+// 배경 색상
+const BODY_COLOR = Color(0xFFECF0F5);
+const BODY_COLOR2 = Color(0xFFF7F7F7);
+const BODY_COLOR3 = Color(0xFFFAFCFE);
+const BODY_COLOR4 = Color(0xFFF9FBFC);
+const BODY_COLOR5 = Color(0xFFF1F2F5);
+const BODY_COLOR6 = Color(0xFFE5EAF1);
+
 const BODY_TEXT_COLOR_GREEN_01 = Color(0xFFC4FF19);
+const BODY_TEXT_COLOR_GREEN_02 = Color(0xFF56B300);
 
 
 /// 선 색상
@@ -26,3 +35,4 @@ const LINE_COLOR_01 = Color(0xFFE5EAF1);
 /// 아이콘 색상
 const BLUETOOTH_COLOR = Color(0xFF336CDA);
 const BATTERY_COLOR = Color(0xFF22A45D);
+

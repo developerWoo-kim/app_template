@@ -1,170 +1,75 @@
-package com.gwkim.app_template.common.beacon
+package com.gwkim.app_template.app.driving
 
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
-import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanFilter
-import android.bluetooth.le.ScanResult
-import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.media.SoundPool
+import android.os.BatteryManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
 import com.gwkim.app_template.MyApplication
 import com.gwkim.app_template.R
 import com.gwkim.app_template.app.ad.data.DriveLogRequest
 import com.gwkim.app_template.app.ad.data.LocationData
-import com.gwkim.app_template.common.location.provider.*
-import com.gwkim.app_template.app.driving.AutoDrivingOption
 import com.gwkim.app_template.common.api.ApiClient
+import com.gwkim.app_template.common.location.provider.AndroidLocationProviderClient
+import com.gwkim.app_template.common.location.provider.BLLocationProvider
+import com.gwkim.app_template.common.location.provider.LocationRequestOptions
+import com.gwkim.app_template.common.location.provider.LocationUpdateListener
 import com.gwkim.app_template.common.timer.TimerHandler
 import com.gwkim.app_template.common.timer.TimerService
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.HashMap
 
-
-class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpdateListener {
-    val soundPool:SoundPool = SoundPool.Builder().build()
+class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : LocationUpdateListener {
+    val soundPool: SoundPool = SoundPool.Builder().build()
     private var context: Context = MyApplication.applicationContext()
     private var locatorClient: BLLocationProvider? = null
     private var isLocationRunning = false;
     private var isDriving = false;
-    // ble manager
-    val bleManager: BluetoothManager =
-            MyApplication.applicationContext().getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-    // ble adapter
-    val bleAdapter: BluetoothAdapter? get() = bleManager.adapter
-    // location manager
 
-    private val scanHandler = Handler(Looper.getMainLooper())
-    private val scanInterval: Long = 5000 // 3 seconds
-    private var scanMaxFailureCount = 3
-    private var scanFailureCount = 0
-
-    var isScan = false
-    var scanResults: ArrayList<BluetoothDevice>? = ArrayList()
+    private var connectMaxFailureCount = 3
+    private var connectFailureCount = 0
 
     private val drivingEndHandler = Handler(Looper.getMainLooper())
 
-    private val scanCallback = object : ScanCallback() {
-        override fun onScanResult(callbackType: Int, result: ScanResult) {
-            super.onScanResult(callbackType, result)
-            Log.d("BleScanner", "Scan result: ${result.device.address}")
-            isScan = true
-            scanFailureCount = 0
-            addScanResult(result)
-            stopScan()
-        }
+    private val monitoringHandler = Handler(Looper.getMainLooper())
+    private val monitoringInterval: Long = 5000 // 10 seconds
 
-        override fun onScanFailed(errorCode: Int) {
-            super.onScanFailed(errorCode)
-            Log.d("BleScanner", "Scan failed with error: $errorCode")
-            // Increment failure count on scan failure
-            scanFailureCount++
-            if (scanFailureCount >= scanMaxFailureCount) {
-                Log.d("BleScanner", "Max scan failures reached, setting scan result to false")
-                handleScanFailure()
-            }
-        }
-
-        private fun addScanResult(result: ScanResult) {
-            // get scanned device
-            val device = result.device
-            // get scanned device MAC address
-            val deviceAddress = device.address
-            val deviceName = device.name
-            // add the device to the result list
-            for (dev in scanResults!!) {
-                if (dev.address == deviceAddress) return
-            }
-            scanResults?.add(result.device)
-        }
-    }
-
-    private fun startScan(filters: MutableList<ScanFilter>, settings: ScanSettings) {
-        bleAdapter?.bluetoothLeScanner?.startScan(filters, settings, scanCallback)
-    }
-
-    private fun stopScan() {
-        bleAdapter?.bluetoothLeScanner?.stopScan(scanCallback)
-    }
-
-    fun startPeriodicScan() {
-
-        val filters: MutableList<ScanFilter> = ArrayList()
-        runBlocking {
-            val beaconAddress = drivingOption.getPreference(AutoDrivingOption.BEACON_ADDRESS).first() ?: ""
-            Log.d("startPeriodicScan ::: ", beaconAddress);
-            val scanFilter: ScanFilter = ScanFilter.Builder()
-                    .setDeviceAddress(beaconAddress)
-                    .build()
-            filters.add(scanFilter)
-        }
-        val settings = ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-                .build()
-
-        scanHandler.postDelayed(object : Runnable {
+    fun startMonitoring() {
+        Log.d("BatteryStatusMonitoring", " :: startMonitoring")
+        monitoringHandler.postDelayed(object : Runnable {
             override fun run() {
-                Log.d("BleScanner", "SCANNING MAX FAILURE COUNT :: $scanMaxFailureCount")
-                Log.d("BleScanner", "SCANNING FAILURE COUNT :: $scanFailureCount")
-                Log.d("BleScanner", "Starting BLE scan")
-                isScan = false
-                startScan(filters, settings)
-
-                scanHandler.postDelayed({
-                    Log.d("BleScanner", "Stopping BLE scan")
-                    stopScan()
-                    if(!isScan) {
-                        handleScanFailure()
-                    } else {
-                        if(!isLocationRunning) {
-                            locatorClient = context?.let { getLocationClient(it) }
-                            locatorClient?.requestLocationUpdates(LocationRequestOptions())
-                            isLocationRunning = true
-                            Log.d("SCAN SUCCESS :::: ", "ISDRIVING :: $isDriving")
-                        }
-                    }
-
-                    // Schedule next scan
-                    scanHandler.postDelayed(this, scanInterval)
-                }, scanInterval)
-            }
-        }, scanInterval)
-    }
-
-    fun stopPeriodicScan() {
-        scanHandler.removeCallbacksAndMessages(null)
-        stopScan()
-        scanFailureCount = 0;
-        isScan = false;
-        isLocationRunning = false;
-        isDriving = false;
-    }
-
-    private fun handleScanFailure() {
-        Log.d("BleScanner", "Scan result: false")
-        if(isLocationRunning) {
-            scanFailureCount++
-            if(scanFailureCount >= scanMaxFailureCount) {
-                locatorClient?.removeLocationUpdates()
-                isLocationRunning = false
-
-                if(isDriving) {
-                    stopDriving()
+                Log.d("BatteryStatusMonitoring", " :: MONITORING.......")
+                val batteryStatus: Intent? = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+                    context.registerReceiver(null, ifilter)
                 }
-            }
-        }
 
-        Log.d("handleScanFailure", "handleScanFailure isDriving $isDriving")
+                val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+
+                val isCharging = when(status) {
+                    BatteryManager.BATTERY_STATUS_CHARGING -> true
+                    else -> false
+                }
+
+                if(!isCharging) {
+                    handleMonitoringFailure()
+                } else {
+                    connectFailureCount = 0
+                    if(!isLocationRunning) {
+                        locatorClient = context?.let { getLocationClient(it) }
+                        locatorClient?.requestLocationUpdates(LocationRequestOptions())
+                        isLocationRunning = true
+                        Log.d("SCAN SUCCESS :::: ", "ISDRIVING :: $isDriving")
+                    }
+                }
+
+                monitoringHandler.postDelayed(this, monitoringInterval)
+            }
+        }, monitoringInterval)
     }
 
     private fun getLocationClient(context: Context): BLLocationProvider {
@@ -239,6 +144,21 @@ class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpda
         Toast.makeText(context, "애드럭과 함께 운행이 시작되었습니다!", Toast.LENGTH_SHORT).show();
 
         context.startService(Intent(context, TimerService::class.java))
+    }
+
+    fun handleMonitoringFailure() {
+        Log.d("BatteryMonitoring", "Connect result: false")
+        if(isLocationRunning) {
+            connectFailureCount++
+            if(connectFailureCount >= connectMaxFailureCount) {
+                locatorClient?.removeLocationUpdates()
+                isLocationRunning = false
+
+                if(isDriving) {
+                    stopDriving()
+                }
+            }
+        }
     }
 
     fun stopDriving() {

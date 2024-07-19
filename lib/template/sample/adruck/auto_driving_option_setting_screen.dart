@@ -6,70 +6,41 @@ import 'package:app_template/common/const/radius_type.dart';
 import 'package:app_template/common/layout/default_layout.dart';
 import 'package:app_template/common/utils/app_bar_util.dart';
 import 'package:app_template/common/utils/cupertino_modal_util.dart';
+import 'package:app_template/template/sample/adruck/ad_driving_option_provider.dart';
+import 'package:app_template/template/sample/adruck/driving_end_option_setting_screen.dart';
+import 'package:app_template/template/sample/adruck/driving_option_model.dart';
+import 'package:app_template/template/sample/adruck/driving_start_option_setting_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-enum AutoStartType {
-  NONE('사용 안함', Icon(Icons.do_not_disturb_alt, color: Colors.red, size: 25,), 'none'),
-  BATTERY('배터리 충전 시', Icon(Icons.battery_charging_full, color: BATTERY_COLOR, size: 25,), 'battery'),
-  BEACON('BLE 비콘 연결 시', Icon(Icons.bluetooth, color: BLUETOOTH_COLOR, size: 25,), 'beacon');
-
-  const AutoStartType(this.value, this.icon, this.code);
-
-  final String value;
-  final Icon icon;
-  final String code;
-}
-
-enum DrivingStartCondition {
-  IMMEDIATE('즉시운행', ''),
-  DETECT_10('10km/h', '10'),
-  DETECT_15('15km/h', '15'),
-  DETECT_20('20km/h', '20');
-  const DrivingStartCondition(this.textValue, this.value);
-
-  final String textValue;
-  final String value;
-}
-
-enum DrivingEndCondition {
-  IMMEDIATE('즉시종료', ''),
-  SEC_30('30초', '30'),
-  MIN_1('1분', '60'),
-  MIN_3('3분', '180'),
-  MIN_5('5분', '300');
-
-  const DrivingEndCondition(this.textValue, this.value);
-
-  final String textValue;
-  final String value;
-}
 
 class AutoDrivingOptionSettingScreen extends ConsumerStatefulWidget {
   const AutoDrivingOptionSettingScreen({super.key});
 
   @override
   ConsumerState<AutoDrivingOptionSettingScreen> createState() => _AutoDrivingOptionSettingScreenState();
+
 }
 
 class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOptionSettingScreen> {
-  AutoStartType autoStartType = AutoStartType.NONE;
-  String beaconAddress = 'C3:00:00:2D:DA:69';
-  DrivingStartCondition drivingStartCondition = DrivingStartCondition.DETECT_10;
-  DrivingEndCondition drivingEndCondition = DrivingEndCondition.IMMEDIATE;
-
   static const auto_driving_option_channel = MethodChannel('auto_driving_option_channel');
 
   Future<void> saveAutoDrivingOption() async {
+
+    final state = ref.read(adDrivingOptionProvider);
+    final model = state as DrivingOptionModel;
     try {
       await auto_driving_option_channel.invokeMethod('setOption', {
-        'autoStartType' : autoStartType.code,
-        'beaconAddress' : beaconAddress,
-        'drivingStartCondition' : drivingStartCondition.value,
-        'drivingEndCondition' : drivingEndCondition.value,
+        'autoStartType' : model.autoStartType.code,
+        'beaconAddress' : 'C3:00:00:2D:DA:69',
+        'drivingStartCondition' : model.drivingStartCondition.value,
+        'drivingEndCondition' : model.drivingEndCondition.value,
       });
+
+      ref.read(saveAdDrivingOptionProvider.notifier).saveAdDrivingOption(model);
+
+      Navigator.of(context).pop();
     } on PlatformException catch (e) {
       // 에러 처리
       print("Failed to invoke method: '${e.message}'.");
@@ -78,15 +49,29 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(adDrivingOptionProvider);
+    if(state is DrivingOptionModelLoading) {
+      return DefaultLayout(
+        appBar: AppBarUtil.buildAppBar(AppBarType.TEXT_TITLE, title: '자동운행기록 설정'),
+        body: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+          child: Center(
+            child: CircularProgressIndicator(),
+          )
+        ),
+      );
+    }
+
+    final model = state as DrivingOptionModel;
     return DefaultLayout(
-      appBar: AppBarUtil.buildAppBar(AppBarType.TEXT_TITLE, title: '자동운행기록 설정11'),
+      appBar: AppBarUtil.buildAppBar(AppBarType.TEXT_TITLE, title: '자동운행기록 설정'),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
         child: ListView(
           children: [
-            _autoDrivingSettingRow(),
-            if(autoStartType != AutoStartType.NONE)
-            _autoDrivingDetailSetting()
+            _autoDrivingSettingRow(model),
+            if(model.autoStartType != AutoStartType.NONE)
+            _autoDrivingDetailSetting(model)
           ],
         ),
       ),
@@ -110,7 +95,7 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
     );
   }
 
-  Widget _autoDrivingSettingRow() {
+  Widget _autoDrivingSettingRow(DrivingOptionModel model) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -140,7 +125,7 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
                         ),
                         onPressed: () {
                           setState(() {
-                            autoStartType = AutoStartType.BATTERY;
+                            ref.read(adDrivingOptionProvider.notifier).copyWith(autoStartType: AutoStartType.BATTERY);
                           });
                           Navigator.pop(context);
                         },
@@ -162,7 +147,7 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
                         ),
                         onPressed: () {
                           setState(() {
-                            autoStartType = AutoStartType.BEACON;
+                            ref.read(adDrivingOptionProvider.notifier).copyWith(autoStartType: AutoStartType.BEACON);
                           });
                           Navigator.pop(context);
                         },
@@ -184,7 +169,7 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
                         ),
                         onPressed: () {
                           setState(() {
-                            autoStartType = AutoStartType.NONE;
+                            ref.read(adDrivingOptionProvider.notifier).copyWith(autoStartType: AutoStartType.NONE);
                           });
                           Navigator.pop(context);
                         },
@@ -192,7 +177,7 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
                     ]
                 );
               },
-              child: _autoDrivingSettingText()
+              child: _autoDrivingSettingText(model)
           ),
         ),
         const Divider(thickness: 1, height: 1),
@@ -201,16 +186,16 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
     );
   }
 
-  Widget _autoDrivingSettingText() {
+  Widget _autoDrivingSettingText(DrivingOptionModel model) {
     return Container(
       height: 50,
       alignment: Alignment.centerLeft,
       child: Row(
         children: [
-          autoStartType.icon,
+          model.autoStartType.icon,
           SizedBox(width: 8),// 아이콘과 텍스트 간의 간격
           BodyText(
-              title: autoStartType.value,
+              title: model.autoStartType.value,
               textSize: BodyTextSize.MEDIUM
           ),
           Spacer(), // 오른쪽 여백 확장
@@ -220,17 +205,23 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
     );
   }
   
-  Widget _autoDrivingDetailSetting() {
+  Widget _autoDrivingDetailSetting(DrivingOptionModel model) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(height: 16.0,),
         BodyText(title: '상세설정', textSize: BodyTextSize.LARGE, fontWeight: FontWeight.w500,),
         Material(
           color: Colors.transparent,
           child: InkWell(
               onTap: (){
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const DrivingStartOptionSettingScreen(),
+                  ),
+                );
               },
-              child: _autoDrivingDetailSettingText(text: '운행시작 조건', value: drivingStartCondition.textValue.toString())
+              child: _autoDrivingDetailSettingText(text: '운행시작 조건', value: model.drivingStartCondition.textValue.toString())
           ),
         ),
         const Divider(thickness: 1, height: 1),
@@ -239,8 +230,13 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
           color: Colors.transparent,
           child: InkWell(
               onTap: (){
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const DrivingEndOptionSettingScreen(),
+                  ),
+                );
               },
-              child: _autoDrivingDetailSettingText(text: '운행종료 조건', value: drivingEndCondition.textValue.toString())
+              child: _autoDrivingDetailSettingText(text: '운행종료 조건', value: model.drivingEndCondition.textValue.toString())
           ),
         ),
         const Divider(thickness: 1, height: 1),

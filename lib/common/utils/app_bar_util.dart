@@ -20,7 +20,7 @@ class AppBarUtil {
       case AppBarType.TEXT_TITLE:
         return AppBar(
           backgroundColor: PRIMARY_COLOR_04,
-          title: TitleText(title: title!),
+          title: TitleText(title: title ?? ''),
         );
       case AppBarType.MAP_TAB_BAR:
         return AppBar(
