@@ -1,5 +1,6 @@
 package com.gwkim.app_template.common.refrofit.interceptor
 
+import android.util.Log
 import com.gwkim.app_template.app.auth.TokenRepository
 import com.gwkim.app_template.common.api.ApiClient
 import kotlinx.coroutines.flow.first
@@ -15,14 +16,14 @@ class HeaderInterceptor @Inject constructor(
         val accessToken : String = runBlocking {
             tokenRepository.getPreference(TokenRepository.ACCESS_TOKEN_KEY).first()
         } ?: return errorResponse(chain.request())
-
+        Log.d("HeaderInterceptor", ":::::::::: HeaderInterceptor")
         var response: Response
         if(!chain.request().header("accessToken").isNullOrEmpty()) {
             val tokenAddedRequest = chain.request().newBuilder()
                     .addHeader("authorization", "Bearer $accessToken" )
                     .addHeader("User-Agent-Platform", "ANDROID")
                     .build()
-
+            Log.d("HeaderInterceptor", ":::::::::: HeaderInterceptor HEADERS == ${tokenAddedRequest.headers}")
             response = chain.proceed(tokenAddedRequest);
 
             if (response.code == 401) {

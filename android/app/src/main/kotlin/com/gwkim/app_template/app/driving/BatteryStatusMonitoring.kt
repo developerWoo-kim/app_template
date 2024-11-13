@@ -9,6 +9,12 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Operation.State.SUCCESS
+import androidx.work.WorkManager
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.ktx.messaging
 import com.gwkim.app_template.MyApplication
 import com.gwkim.app_template.R
 import com.gwkim.app_template.app.ad.data.DriveLogRequest
@@ -20,11 +26,15 @@ import com.gwkim.app_template.common.location.provider.LocationRequestOptions
 import com.gwkim.app_template.common.location.provider.LocationUpdateListener
 import com.gwkim.app_template.common.timer.TimerHandler
 import com.gwkim.app_template.common.timer.TimerService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.HashMap
 
 class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : LocationUpdateListener {
+    var runningAdSn: String = ""
     val soundPool: SoundPool = SoundPool.Builder().build()
     private var context: Context = MyApplication.applicationContext()
     private var locatorClient: BLLocationProvider? = null
@@ -40,6 +50,10 @@ class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : L
     private val monitoringInterval: Long = 5000 // 10 seconds
 
     fun startMonitoring() {
+        runBlocking {
+            val userModel = ApiClient.apiService.getUser("true")
+            runningAdSn = userModel.runningAdSn
+        }
         Log.d("BatteryStatusMonitoring", " :: startMonitoring")
         monitoringHandler.postDelayed(object : Runnable {
             override fun run() {
@@ -48,11 +62,18 @@ class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : L
                     context.registerReceiver(null, ifilter)
                 }
 
-                val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+                val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1) ?: -1
 
-                val isCharging = when(status) {
-                    BatteryManager.BATTERY_STATUS_CHARGING -> true
-                    else -> false
+//                val isCharging = when(status) {
+//                    BatteryManager.BATTERY_PLUGGED_AC -> true
+//                    BatteryManager.BATTERY_STATUS_FULL -> true
+//                    else -> false
+//                }
+
+                Log.d("battery status ====", status.toString())
+                var isCharging = false
+                if(status == BatteryManager.BATTERY_PLUGGED_AC || status == BatteryManager.BATTERY_PLUGGED_USB || status == BatteryManager.BATTERY_PLUGGED_DOCK || status == BatteryManager.BATTERY_PLUGGED_WIRELESS) {
+                    isCharging = true
                 }
 
                 if(!isCharging) {
@@ -70,6 +91,10 @@ class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : L
                 monitoringHandler.postDelayed(this, monitoringInterval)
             }
         }, monitoringInterval)
+    }
+
+    fun stopMonitoring() {
+        monitoringHandler.removeCallbacksAndMessages(null)
     }
 
     private fun getLocationClient(context: Context): BLLocationProvider {
@@ -126,7 +151,7 @@ class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : L
 
         val data : List<LocationData> = listOf(LocationData(latitude, longitude, sttscd, time))
         runBlocking {
-            ApiClient.apiService.sendDriveLog("true", DriveLogRequest("AD_0000021",data))
+            ApiClient.apiService.sendDriveLog("true", DriveLogRequest(runningAdSn,data))
         }
 
     }
@@ -142,12 +167,10 @@ class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : L
             }
         }
         Toast.makeText(context, "애드럭과 함께 운행이 시작되었습니다!", Toast.LENGTH_SHORT).show();
-
-        context.startService(Intent(context, TimerService::class.java))
     }
 
     fun handleMonitoringFailure() {
-        Log.d("BatteryMonitoring", "Connect result: false")
+        Log.d("BatteryMonitoring", "Connect result: false count :: connectFailureCount")
         if(isLocationRunning) {
             connectFailureCount++
             if(connectFailureCount >= connectMaxFailureCount) {
@@ -162,21 +185,20 @@ class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : L
     }
 
     fun stopDriving() {
-        runBlocking {
-            val drivingEndConditionStr = drivingOption.getPreference(AutoDrivingOption.DRIVING_END_CONDITION).first() ?: ""
+        val drivingEndConditionStr = runBlocking {
+            drivingOption.getPreference(AutoDrivingOption.DRIVING_END_CONDITION).first() ?: ""
+        }
+        val drivingEndCondition = drivingEndConditionStr.toLongOrNull()
+        Log.d("drivingEndCondition", "drivingEndCondition $drivingEndCondition")
+        Log.d("drivingEndCondition", "drivingEndCondition isDriving $isDriving")
 
-            val drivingEndCondition = drivingEndConditionStr.toLongOrNull()
-            Log.d("drivingEndCondition", "drivingEndCondition $drivingEndCondition")
-            Log.d("drivingEndCondition", "drivingEndCondition isDriving $isDriving")
-            if(drivingEndCondition != null) {
-                drivingEndHandler.postDelayed({
+        if(drivingEndCondition != null) {
+            drivingEndHandler.postDelayed(object: Runnable{
+                override fun run() {
                     if(!isLocationRunning) {
+                        Firebase.messaging.unsubscribeFromTopic("driving")
                         TimerHandler.stopTimer()
                         isDriving = false
-
-                        runBlocking {
-                            ApiClient.apiService.forceQuitDriveLog("true");
-                        }
 
                         var soundId : Int = 0
                         soundId = soundPool.load(context, R.raw.drive_end_action_audio, 1)
@@ -187,27 +209,80 @@ class BatteryStatusMonitoring(private val drivingOption: AutoDrivingOption)  : L
                         }
 
                         Toast.makeText(context, "운행이 종료되었습니다.", Toast.LENGTH_SHORT).show();
-                    }
-                }, drivingEndCondition * 1000)
-            } else {
-                TimerHandler.stopTimer()
-                isDriving = false
 
-                runBlocking {
-                    ApiClient.apiService.forceQuitDriveLog("true");
-                }
-
-                var soundId : Int = 0
-                soundId = soundPool.load(context, R.raw.drive_end_action_audio, 1)
-                soundPool.setOnLoadCompleteListener { soundPool, sountId, status ->
-                    if (status == 0) { // Status 0 means the sound was loaded successfully
-                        soundPool.play(soundId, 1f, 1f, 0, 0, 1f)
+                        runBlocking {
+                            ApiClient.apiService.forceQuitDriveLog("true");
+                        }
                     }
                 }
 
-                Toast.makeText(context, "운행이 종료되었습니다.", Toast.LENGTH_SHORT).show();
+            }, drivingEndCondition * 1000)
+        } else {
+            TimerHandler.stopTimer()
+            isDriving = false
+
+            runBlocking {
+                ApiClient.apiService.forceQuitDriveLog("true");
             }
 
+            var soundId : Int = 0
+            soundId = soundPool.load(context, R.raw.drive_end_action_audio, 1)
+            soundPool.setOnLoadCompleteListener { soundPool, sountId, status ->
+                if (status == 0) { // Status 0 means the sound was loaded successfully
+                    soundPool.play(soundId, 1f, 1f, 0, 0, 1f)
+                }
+            }
+
+            Toast.makeText(context, "운행이 종료되었습니다.", Toast.LENGTH_SHORT).show();
         }
+
+//        runBlocking {
+//            val drivingEndConditionStr = drivingOption.getPreference(AutoDrivingOption.DRIVING_END_CONDITION).first() ?: ""
+//
+//            val drivingEndCondition = drivingEndConditionStr.toLongOrNull()
+//            Log.d("drivingEndCondition", "drivingEndCondition $drivingEndCondition")
+//            Log.d("drivingEndCondition", "drivingEndCondition isDriving $isDriving")
+//            if(drivingEndCondition != null) {
+//                drivingEndHandler.postDelayed({
+//                    if(!isLocationRunning) {
+//                        Firebase.messaging.unsubscribeFromTopic("driving")
+//                        TimerHandler.stopTimer()
+//                        isDriving = false
+//
+//                        runBlocking {
+//                            ApiClient.apiService.forceQuitDriveLog("true");
+//                        }
+//
+//                        var soundId : Int = 0
+//                        soundId = soundPool.load(context, R.raw.drive_end_action_audio, 1)
+//                        soundPool.setOnLoadCompleteListener { soundPool, sountId, status ->
+//                            if (status == 0) { // Status 0 means the sound was loaded successfully
+//                                soundPool.play(soundId, 1f, 1f, 0, 0, 1f)
+//                            }
+//                        }
+//
+//                        Toast.makeText(context, "운행이 종료되었습니다.", Toast.LENGTH_SHORT).show();
+//                    }
+//                }, drivingEndCondition * 1000)
+//            } else {
+//                TimerHandler.stopTimer()
+//                isDriving = false
+//
+//                runBlocking {
+//                    ApiClient.apiService.forceQuitDriveLog("true");
+//                }
+//
+//                var soundId : Int = 0
+//                soundId = soundPool.load(context, R.raw.drive_end_action_audio, 1)
+//                soundPool.setOnLoadCompleteListener { soundPool, sountId, status ->
+//                    if (status == 0) { // Status 0 means the sound was loaded successfully
+//                        soundPool.play(soundId, 1f, 1f, 0, 0, 1f)
+//                    }
+//                }
+//
+//                Toast.makeText(context, "운행이 종료되었습니다.", Toast.LENGTH_SHORT).show();
+//            }
+//
+//        }
     }
 }

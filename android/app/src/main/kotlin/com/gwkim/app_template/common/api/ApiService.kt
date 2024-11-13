@@ -2,6 +2,7 @@ package com.gwkim.app_template.common.api
 
 import com.gwkim.app_template.app.ad.data.DriveLogRequest
 import com.gwkim.app_template.app.auth.data.AccessTokenResponse
+import com.gwkim.app_template.app.auth.data.UserModelResponse
 import okhttp3.Response
 import okhttp3.ResponseBody
 import retrofit2.http.Body
@@ -18,11 +19,13 @@ interface ApiService {
     suspend fun login(): AccessTokenResponse
 
     @GET("/api/v1/user")
-    suspend fun getUser(@Header("accessToken") accessToken: String): ResponseBody
+    suspend fun getUser(@Header("accessToken") accessToken: String): UserModelResponse
 
     @POST("/api/v1/ad/drive-log")
     suspend fun sendDriveLog(@Header("accessToken") accessToken: String, @Body driveLog:DriveLogRequest): ResponseBody
 
     @POST("/api/v1/ad/drive-log/force-quit")
     suspend fun forceQuitDriveLog(@Header("accessToken") accessToken: String): ResponseBody
+
+
 }

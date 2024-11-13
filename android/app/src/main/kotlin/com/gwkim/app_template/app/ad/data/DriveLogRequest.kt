@@ -1,13 +1,15 @@
 package com.gwkim.app_template.app.ad.data
 
+import com.google.gson.annotations.SerializedName
+
 data class DriveLogRequest(
-    val adSn:String,
-    val data:List<LocationData>
+    @SerializedName("adSn") val adSn:String,
+    @SerializedName("data") val data:List<LocationData>
 )
 
 data class LocationData(
-    val latitude:Double,
-    val longitude:Double,
-    val sttscd:String,
-    val time:Double,
+    @SerializedName("latitude") val latitude:Double,
+    @SerializedName("longitude") val longitude:Double,
+    @SerializedName("sttscd") val sttscd:String,
+    @SerializedName("time") val time:Double,
 )

@@ -22,6 +22,7 @@ object TimerHandler : EventChannel.StreamHandler {
     }
 
     fun startTimer() {
+
         startTime = SystemClock.elapsedRealtime()
         isRunning = true
         handler.post(tickRunnable)

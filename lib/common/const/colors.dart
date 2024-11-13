@@ -28,6 +28,18 @@ const BODY_COLOR6 = Color(0xFFE5EAF1);
 const BODY_TEXT_COLOR_GREEN_01 = Color(0xFFC4FF19);
 const BODY_TEXT_COLOR_GREEN_02 = Color(0xFF56B300);
 
+// 텍스트 필드 테두리 색상
+const INPUT_BORDER_COLOR = Color(0xFFF3F2F2);
+const INPUT_BORDER_COLOR2 = Color(0xFFF3F3F3);
+
+// 텍스트 필드 배경 색상
+const INPUT_BG_COLOR = Color(0xFFFFFFFF);
+const INPUT_BG_COLOR2 = Color(0xFFFBFBFB);
+const INPUT_BG_COLOR3 = Color(0xFFF6F6F6);
+const INPUT_BG_COLOR4 = Color(0xFF888892);
+const INPUT_BG_COLOR5 = Color(0xD2F6F7F8);
+const INPUT_BG_COLOR6 = Color(0xFFC0C0C0);
+
 
 /// 선 색상
 const LINE_COLOR_01 = Color(0xFFE5EAF1);

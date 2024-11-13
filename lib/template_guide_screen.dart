@@ -17,7 +17,12 @@ class TemplateGuideScreen extends StatelessWidget {
 
   Future<bool> _checkBlePermission() async {
     final access = Permission.bluetoothScan.request();
-    return true;
+    final connectAccess = await Permission.bluetoothConnect.request();
+    if(connectAccess.isGranted) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   Future<bool> _checkLocationPermission() async {
@@ -272,6 +277,18 @@ class TemplateGuideScreen extends StatelessWidget {
                     final bleAccess = await _checkIgnoreBatteryOptimization();
                   },
                   child: Text('배터리 소모 예외 앱 권한'),
+                ),
+              )
+            ],
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final bleAccess = await _checkBlePermission();
+                  },
+                  child: Text('블루투스 권한'),
                 ),
               )
             ],

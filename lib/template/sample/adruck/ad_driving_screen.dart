@@ -1,20 +1,28 @@
 import 'dart:async';
 import 'dart:ffi';
 
+import 'package:app_template/app/user/model/user_model.dart';
+import 'package:app_template/app/user/provider/auth_provider.dart';
+import 'package:app_template/app/user/provider/user_provider.dart';
 import 'package:app_template/common/component/text/body_text.dart';
 import 'package:app_template/common/component/text/body_text_box.dart';
 import 'package:app_template/common/const/colors.dart';
 import 'package:app_template/common/const/custom_method_channel.dart';
 import 'package:app_template/common/layout/default_layout.dart';
 import 'package:app_template/common/utils/app_bar_util.dart';
+import 'package:app_template/common/utils/dialog_util.dart';
+import 'package:app_template/common/utils/permission_util.dart';
 import 'package:app_template/template/sample/adruck/ad_driving_option_provider.dart';
 import 'package:app_template/template/sample/adruck/auto_driving_option_setting_screen.dart';
 import 'package:app_template/template/sample/adruck/driving_option_model.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class AdDrivingScreen extends ConsumerStatefulWidget {
+  static String get routeName => 'adDriveScreen';
   const AdDrivingScreen({super.key});
 
   @override
@@ -68,9 +76,8 @@ class _AdDrivingScreenState extends ConsumerState<AdDrivingScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return DefaultLayout(
-      appBar: AppBarUtil.buildAppBar(AppBarType.TEXT_TITLE, title: '광고운행'),
+      appBar: _DrivingAppBar(),
       body: Padding(
         padding: EdgeInsets.only(left: 8, top: 2, right: 8, bottom: 10),
         child: ListView(
@@ -78,12 +85,57 @@ class _AdDrivingScreenState extends ConsumerState<AdDrivingScreen> {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AutoDrivingOptionSettingScreen(),
-                    ),
+                onTap: isDriving
+                ? () {
+                  DialogUtil.showSingleConfirm(context,
+                      content: '운행중에는 설정할 수 없습니다.',
+                      confirmText: '확인',
+                      confirmCallBack: () {
+                        context.pop();
+                      }
                   );
+                }
+                : () async {
+                  var locationAccess = await PermissionUtil.location();
+                  if(!locationAccess) {
+                    DialogUtil.showSingleConfirm(context,
+                        content: '위치권한을 항상허용으로 설정해야 자동운행 설정이 가능합니다.',
+                        confirmText: '확인',
+                        confirmCallBack: () {
+                          context.pop();
+                        }
+                    );
+                  }
+
+                  var locationAlwaysAccess = await PermissionUtil.locationAlways();
+                  if(!locationAlwaysAccess) {
+                    DialogUtil.showSingleConfirm(context,
+                        content: '위치권한을 항상허용으로 설정해야 자동운행 설정이 가능합니다.',
+                        confirmText: '확인',
+                        confirmCallBack: () {
+                          context.pop();
+                        }
+                    );
+                  }
+
+                  var notificationAccess = await PermissionUtil.notification();
+                  if(!notificationAccess) {
+                    DialogUtil.showSingleConfirm(context,
+                        content: '알림설정을 허용해야 자동운행 설정이 가능합니다.',
+                        confirmText: '확인',
+                        confirmCallBack: () {
+                          context.pop();
+                        }
+                    );
+                  }
+
+                  if(locationAccess && locationAlwaysAccess && notificationAccess) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AutoDrivingOptionSettingScreen(),
+                      ),
+                    );
+                  }
                 },
                 child: _AutoDrivingOption()
               )
@@ -115,62 +167,81 @@ class _AdDrivingScreenState extends ConsumerState<AdDrivingScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  height: MediaQuery.of(context).size.width * 0.42,
-                  width: MediaQuery.of(context).size.width * 0.42,
-                  decoration: BoxDecoration(
-                      color: isDriving ? Colors.red : PRIMARY_COLOR_01,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 5,
-                          blurRadius: 7,
-                          offset: Offset(0, 3), // changes position of shadow
+                GestureDetector(
+                  onTap: () {
+                    final state = ref.read(saveAdDrivingOptionProvider);
+
+                    final model = state as DrivingOptionModel;
+                    if(model.autoStartType != AutoStartType.NONE) {
+                      DialogUtil.showSingleConfirm(context,
+                          content: '자동운행 사용 중에는 사용 하실 수 없습니다.',
+                          confirmText: '확인',
+                          confirmCallBack: () {
+                            context.pop();
+                          }
+                      );
+                    } else {
+
+                    }
+
+                  },
+                  child: Container(
+                    height: MediaQuery.of(context).size.width * 0.42,
+                    width: MediaQuery.of(context).size.width * 0.42,
+                    decoration: BoxDecoration(
+                        color: isDriving ? Colors.red : PRIMARY_COLOR_01,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 5,
+                            blurRadius: 7,
+                            offset: Offset(0, 3), // changes position of shadow
+                          ),
+                        ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if(isDriving)
+                        BodyText(
+                          title: drivingTime,
+                          textSize: BodyTextSize.MEDIUM,
+                          color: BODY_TEXT_COLOR_01,
                         ),
+                        // BodyText(
+                        //   title: '광고운행',
+                        //   textSize: BodyTextSize.LARGE,
+                        //   color: BODY_TEXT_COLOR_01,
+                        // ),
+                        Text('광고운행',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 20,
+                              color: BODY_TEXT_COLOR_01
+                          ),
+                        ),
+                        Text(isDriving ? '종료' : '시작',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 42,
+                              color: BODY_TEXT_COLOR_01
+                          ),
+                        )
+                        // BodyText(
+                        //   title: '광고운행',
+                        //   textSize: BodyTextSize.LARGE,
+                        //   color: BODY_TEXT_COLOR_01,
+                        // ),
+                        // Text('시작',
+                        //   style: TextStyle(
+                        //     fontWeight: FontWeight.w500,
+                        //     fontSize: 38,
+                        //     color: BODY_TEXT_COLOR_01
+                        //   ),
+                        // )
                       ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if(isDriving)
-                      BodyText(
-                        title: drivingTime,
-                        textSize: BodyTextSize.MEDIUM,
-                        color: BODY_TEXT_COLOR_01,
-                      ),
-                      // BodyText(
-                      //   title: '광고운행',
-                      //   textSize: BodyTextSize.LARGE,
-                      //   color: BODY_TEXT_COLOR_01,
-                      // ),
-                      Text('광고운행',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 20,
-                            color: BODY_TEXT_COLOR_01
-                        ),
-                      ),
-                      Text(isDriving ? '종료' : '시작',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 42,
-                            color: BODY_TEXT_COLOR_01
-                        ),
-                      )
-                      // BodyText(
-                      //   title: '광고운행',
-                      //   textSize: BodyTextSize.LARGE,
-                      //   color: BODY_TEXT_COLOR_01,
-                      // ),
-                      // Text('시작',
-                      //   style: TextStyle(
-                      //     fontWeight: FontWeight.w500,
-                      //     fontSize: 38,
-                      //     color: BODY_TEXT_COLOR_01
-                      //   ),
-                      // )
-                    ],
+                    ),
                   ),
                 )
               ],
@@ -188,8 +259,24 @@ class _AdDrivingScreenState extends ConsumerState<AdDrivingScreen> {
     );
   }
 
+  AppBar? _DrivingAppBar() {
+    final state = ref.watch(userProvider);
+
+    if(state is! UserModel) {
+      return AppBarUtil.buildAppBar(AppBarType.TEXT_TITLE);
+    } else {
+      final user = state;
+
+      return AppBarUtil.buildAppBar(AppBarType.DRIVE_SCREEN_APP_BAR,
+        title: '로그인 계정 : ${user.userId}',
+        callBack: () {
+          ref.read(authProvider).logout();
+        }
+      );
+    }
+  }
+
   Widget _AutoDrivingOption() {
-    print('build');
     final state = ref.watch(saveAdDrivingOptionProvider);
     if(state is DrivingOptionModelLoading) {
       return Container(

@@ -10,14 +10,17 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.gwkim.app_template.MainActivity
 import com.gwkim.app_template.MyApplication
+import com.gwkim.app_template.R
 import com.gwkim.app_template.app.auth.TokenRepository
 import com.gwkim.app_template.app.driving.AutoDrivingOption
 import com.gwkim.app_template.app.driving.BatteryStatusMonitoring
+import com.gwkim.app_template.common.alarm.AlarmReceiver
 import com.gwkim.app_template.common.receiver.BootReceiver
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -26,6 +29,8 @@ import org.koin.android.ext.android.inject
 import java.util.HashMap
 
 class BeaconScanService : Service() {
+    lateinit var notificationManager: NotificationManager
+
     private lateinit var drivingOption: AutoDrivingOption
     private lateinit var tokenRepository: TokenRepository
     private val beaconScanner: BeaconScanner by inject()
@@ -68,43 +73,53 @@ class BeaconScanService : Service() {
 
 //        batteryStatusMonitoring.startMonitoring()
 //        beaconScanner.startPeriodicScan()
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
         beaconScanner.stopPeriodicScan()
+        batteryStatusMonitoring.stopMonitoring()
+        unregisterReceiver(bootReceiver)
         Log.d("BeaconScanService :: onDestroy()", "Service destroyed and scanning stopped")
     }
 
     private fun startForegroundService() {
         createNotificationChannel()
+
         val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-                this,
-                0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
                 .setContentTitle("애드럭과 beacon scanning...")
                 .setContentText("Scanning for BLE devices...")
-//                .setSmallIcon(R.drawable.ic_notification) // Add your own notification icon here
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.navermap_default_cluster_icon_medium_density) // Add your own notification icon here
                 .setContentIntent(pendingIntent)
-//                .setOngoing(true)
                 .build()
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notification.flags = Notification.FLAG_ONGOING_EVENT
+        } else {
+            notification.flags = Notification.FLAG_NO_CLEAR
+        }
 
         startForeground(1, notification)
     }
 
     private fun createNotificationChannel() {
+        notificationManager = getSystemService(NotificationManager::class.java)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                     channelId,
                     "Bluetooth Service Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
+                    NotificationManager.IMPORTANCE_HIGH
             )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(serviceChannel)
+
+            notificationManager.createNotificationChannel(serviceChannel)
         }
     }
 

@@ -1,12 +1,20 @@
 package com.gwkim.app_template
 
+import android.app.PendingIntent
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import com.google.firebase.FirebaseApp
 import com.gwkim.app_template.app.auth.TokenRepository
 import com.gwkim.app_template.common.beacon.BeaconScanService
 import com.gwkim.app_template.app.driving.AutoDrivingOption
+import com.gwkim.app_template.app.driving.AutoDrivingService
+import com.gwkim.app_template.app.driving.BatteryWorker
 import com.gwkim.app_template.common.timer.TimerHandler
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -19,7 +27,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class MainActivity: FlutterActivity() {
+    private val AUTH_CHANNEL = "auth_channel"
     private val AUTO_DRIVING_OPTION_CHANNEL = "auto_driving_option_channel"
+    private val MANUAL_DRIVING_CHANNEL = "manual_driving_start_channel"
     private val TIMER_EVENT_CHANNEL = "timer_event_channel"
 
 
@@ -27,23 +37,22 @@ class MainActivity: FlutterActivity() {
     private lateinit var tokenRepository: TokenRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
+
+
         drivingOption = AutoDrivingOption(applicationContext)
         tokenRepository = TokenRepository(applicationContext)
-
 //        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
 //        val batteryState = registerReceiver(null, intentFilter)
 //
 //        val status = batteryState!!.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
 //        Log.d("battery status", status.toString())
-
-        testFun()
 //        Intent(this, TimerService::class.java).also { intent ->
 //            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
 //        }
 
 //        val beaconScanService = Intent(this, BeaconScanService::class.java)
 //        ContextCompat.startForegroundService(this, beaconScanService)
-
     }
 
     /**
@@ -60,21 +69,6 @@ class MainActivity: FlutterActivity() {
 //            isTimerServiceBound = false
 //        }
 //    }
-
-    fun testFun() {
-        Log.d("testFun", "testestestes")
-        runBlocking {
-            tokenRepository.setPreference(TokenRepository.ACCESS_TOKEN_KEY, "eyJhbGciOiJIUzUxMiJ9.eyJyb2xlIjoiUk9MRV9EUklWRVIiLCJtZW1iZXJJZCI6ImFyZmt5czIyMjIyIiwic3ViIjoiYXJma3lzMjIyMjIiLCJleHAiOjE3MjEyODQ5MjksImlhdCI6MTcyMTE5ODUyOX0.zO5trCYTqNpMB5IDlBrLtAAbiSEVdFZ4cY6oSl8Xj_4E2P5_-9KUFmhQT0j_snyobO8OlRCONihHDoPLD_98vw")
-            tokenRepository.setPreference(TokenRepository.REFRESH_TOKEN_KEY, "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhcmZreXMyMjIyMiIsImlhdCI6MTcyMTE5ODUyOSwiZXhwIjoxNzUyNzM0NTI5fQ.H_fzzAHkaDVZpAR_SvhnNbC0Q5CE1el5Vm3GuklHCWf8j1McH8vh1l9hVKkpouq7PbfHj_VwRu4bJwtEnsZlqQ")
-
-            val accessToken = tokenRepository.getPreference(TokenRepository.ACCESS_TOKEN_KEY).first()
-            val refreshToken = tokenRepository.getPreference(TokenRepository.REFRESH_TOKEN_KEY).first()
-            accessToken?.let { Log.d("accessToken", it) }
-            refreshToken?.let { Log.d("accessToken", it) }
-
-        }
-
-    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -105,9 +99,21 @@ class MainActivity: FlutterActivity() {
                         Log.d("AutoDrivingOption.BEACON_ADDRESS ::: ", address);
 
                         if(autoStartType.equals("none")) {
-                            context.stopService(Intent(context, BeaconScanService::class.java))
+                            context.stopService(Intent(context, AutoDrivingService::class.java))
                         } else {
-                            context.startService(Intent(context, BeaconScanService::class.java))
+//                            context.stopService(Intent(context, BeaconScanService::class.java))
+//                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                                context.startForegroundService(Intent(context, BeaconScanService::class.java))
+//                            } else {
+//                                context.startService(Intent(context, BeaconScanService::class.java))
+//                            }
+                            if(AutoDrivingService.isServiceRunning) {
+                                context.stopService(Intent(context, AutoDrivingService::class.java))
+                            }
+
+                            val intent = Intent(context, AutoDrivingService::class.java)
+                            intent.action = AutoDrivingService.ACTION_START
+                            ContextCompat.startForegroundService(context, intent)
                         }
 
                     }
@@ -132,6 +138,88 @@ class MainActivity: FlutterActivity() {
                             result.success(options)
                         }
                     }
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUTH_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setAuth" -> {
+                    val accessToken = call.argument<String>("accessToken")
+                    val refreshToken = call.argument<String>("refreshToken")
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        if(accessToken != null && refreshToken != null) {
+                            tokenRepository.setPreference(TokenRepository.ACCESS_TOKEN_KEY, accessToken)
+                            tokenRepository.setPreference(TokenRepository.REFRESH_TOKEN_KEY, refreshToken)
+                        } else {
+                            result.notImplemented()
+                        }
+                    }
+
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val findAccessToken = tokenRepository.getPreference(TokenRepository.ACCESS_TOKEN_KEY).first()
+                        val findRefreshToken = tokenRepository.getPreference(TokenRepository.REFRESH_TOKEN_KEY).first()
+                        findAccessToken?.let { Log.d("findAccessToken", it) }
+                        findRefreshToken?.let { Log.d("findRefreshToken", it)}
+                    }
+
+                    result.success(null) // 결과 반환
+
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MANUAL_DRIVING_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    val accessToken = call.argument<String>("accessToken")
+                    val refreshToken = call.argument<String>("refreshToken")
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        if(accessToken != null && refreshToken != null) {
+                            tokenRepository.setPreference(TokenRepository.ACCESS_TOKEN_KEY, accessToken)
+                            tokenRepository.setPreference(TokenRepository.REFRESH_TOKEN_KEY, refreshToken)
+                        } else {
+                            result.notImplemented()
+                        }
+                    }
+
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val findAccessToken = tokenRepository.getPreference(TokenRepository.ACCESS_TOKEN_KEY).first()
+                        val findRefreshToken = tokenRepository.getPreference(TokenRepository.REFRESH_TOKEN_KEY).first()
+                        findAccessToken?.let { Log.d("findAccessToken", it) }
+                        findRefreshToken?.let { Log.d("findRefreshToken", it)}
+                    }
+
+                    result.success(null) // 결과 반환
+
+                }
+                "stop" -> {
+                    val accessToken = call.argument<String>("accessToken")
+                    val refreshToken = call.argument<String>("refreshToken")
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        if(accessToken != null && refreshToken != null) {
+                            tokenRepository.setPreference(TokenRepository.ACCESS_TOKEN_KEY, accessToken)
+                            tokenRepository.setPreference(TokenRepository.REFRESH_TOKEN_KEY, refreshToken)
+                        } else {
+                            result.notImplemented()
+                        }
+                    }
+
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val findAccessToken = tokenRepository.getPreference(TokenRepository.ACCESS_TOKEN_KEY).first()
+                        val findRefreshToken = tokenRepository.getPreference(TokenRepository.REFRESH_TOKEN_KEY).first()
+                        findAccessToken?.let { Log.d("findAccessToken", it) }
+                        findRefreshToken?.let { Log.d("findRefreshToken", it)}
+                    }
+
+                    result.success(null) // 결과 반환
+
                 }
                 else -> {
                     result.notImplemented()

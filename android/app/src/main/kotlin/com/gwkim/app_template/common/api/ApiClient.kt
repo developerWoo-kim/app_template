@@ -9,6 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
     private const val BASE_URL = "https://www.dpubad.com"
+//    private const val BASE_URL = "https://41a0-116-36-82-239.ngrok-free.app"
     private lateinit var tokenRepository:TokenRepository
 
     private val okHttpClient: OkHttpClient by lazy {

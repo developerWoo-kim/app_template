@@ -1,3 +1,5 @@
+import 'package:app_template/app/user/model/user_model.dart';
+import 'package:app_template/app/user/provider/user_provider.dart';
 import 'package:app_template/common/component/bottom_navigation/basic_bottom_navigation_bar.dart';
 import 'package:app_template/common/component/button/custom_elevated_button.dart';
 import 'package:app_template/common/component/text/body_text.dart';
@@ -6,6 +8,8 @@ import 'package:app_template/common/const/radius_type.dart';
 import 'package:app_template/common/layout/default_layout.dart';
 import 'package:app_template/common/utils/app_bar_util.dart';
 import 'package:app_template/common/utils/cupertino_modal_util.dart';
+import 'package:app_template/common/utils/dialog_util.dart';
+import 'package:app_template/common/utils/permission_util.dart';
 import 'package:app_template/template/sample/adruck/ad_driving_option_provider.dart';
 import 'package:app_template/template/sample/adruck/driving_end_option_setting_screen.dart';
 import 'package:app_template/template/sample/adruck/driving_option_model.dart';
@@ -14,6 +18,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class AutoDrivingOptionSettingScreen extends ConsumerStatefulWidget {
   const AutoDrivingOptionSettingScreen({super.key});
@@ -25,6 +30,7 @@ class AutoDrivingOptionSettingScreen extends ConsumerStatefulWidget {
 
 class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOptionSettingScreen> {
   static const auto_driving_option_channel = MethodChannel('auto_driving_option_channel');
+  String beaconAddress = "";
 
   Future<void> saveAutoDrivingOption() async {
 
@@ -33,7 +39,7 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
     try {
       await auto_driving_option_channel.invokeMethod('setOption', {
         'autoStartType' : model.autoStartType.code,
-        'beaconAddress' : 'C3:00:00:2D:DA:69',
+        'beaconAddress' : beaconAddress,
         'drivingStartCondition' : model.drivingStartCondition.value,
         'drivingEndCondition' : model.drivingEndCondition.value,
       });
@@ -85,6 +91,12 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
                   backgroundColor: PRIMARY_COLOR_03,
                   textColor: BODY_TEXT_COLOR_01,
                   callback: () async{
+                    if(ref.read(adDrivingOptionProvider).autoStartType == AutoStartType.BEACON) {
+                      final model = ref.read(userProvider) as UserModel;
+                      if(model.beaconAddress != null) {
+                        beaconAddress = model.beaconAddress!;
+                      }
+                    }
                     saveAutoDrivingOption();
                   },
                 )
@@ -145,10 +157,51 @@ class _AutoDrivingOptionSettingScreenState extends ConsumerState<AutoDrivingOpti
                             ],
                           ),
                         ),
-                        onPressed: () {
-                          setState(() {
-                            ref.read(adDrivingOptionProvider.notifier).copyWith(autoStartType: AutoStartType.BEACON);
-                          });
+                        onPressed: () async {
+                          final model = ref.read(userProvider) as UserModel;
+                          if(model.beaconAddress == null) {
+                            DialogUtil.showSingleConfirm(context,
+                                content: '차주님께 등록된 비콘 장비가 없습니다. 장비를 받으신 경우 관리자에게 문의해주시기 바랍니다.',
+                                confirmText: '확인',
+                                confirmCallBack: () {
+                                  context.pop();
+                                }
+                            );
+
+                            return;
+                          }
+
+                          final bluetoothScanAccess = await PermissionUtil.bluetoothScan();
+                          if(!bluetoothScanAccess) {
+                            DialogUtil.showSingleConfirm(context,
+                                content: '블루투스 스캔 권한을 허용해주셔야 비콘 설정이 가능합니다.',
+                                confirmText: '확인',
+                                confirmCallBack: () {
+                                  context.pop();
+                                }
+                            );
+
+                            return;
+                          }
+
+                          final bluetoothConnectAccess = await PermissionUtil.bluetoothConnect();
+                          if(!bluetoothConnectAccess) {
+                            DialogUtil.showSingleConfirm(context,
+                                content: '블루투스 연결 권한을 허용해주셔야 비콘 설정이 가능합니다.',
+                                confirmText: '확인',
+                                confirmCallBack: () {
+                                  context.pop();
+                                }
+                            );
+                            return;
+                          }
+
+                          if(bluetoothScanAccess && bluetoothConnectAccess) {
+                            setState(() {
+                              ref.read(adDrivingOptionProvider.notifier).copyWith(autoStartType: AutoStartType.BEACON);
+                            });
+                          }
+
                           Navigator.pop(context);
                         },
                       ),

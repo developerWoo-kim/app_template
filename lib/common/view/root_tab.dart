@@ -5,6 +5,7 @@ import 'package:app_template/template_guide_screen.dart';
 import 'package:flutter/material.dart';
 
 class RootTab extends StatefulWidget {
+  static String get routeName => 'rootTab';
   const RootTab({super.key});
 
   @override

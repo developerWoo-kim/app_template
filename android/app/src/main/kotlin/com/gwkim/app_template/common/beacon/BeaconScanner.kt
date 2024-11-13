@@ -1,5 +1,8 @@
 package com.gwkim.app_template.common.beacon
 
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.app.Service
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
@@ -12,15 +15,21 @@ import android.content.Intent
 import android.media.SoundPool
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.lifecycleScope
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.ktx.messaging
 import com.gwkim.app_template.MyApplication
 import com.gwkim.app_template.R
 import com.gwkim.app_template.app.ad.data.DriveLogRequest
 import com.gwkim.app_template.app.ad.data.LocationData
 import com.gwkim.app_template.common.location.provider.*
 import com.gwkim.app_template.app.driving.AutoDrivingOption
+import com.gwkim.app_template.common.alarm.AlarmReceiver
 import com.gwkim.app_template.common.api.ApiClient
 import com.gwkim.app_template.common.timer.TimerHandler
 import com.gwkim.app_template.common.timer.TimerService
@@ -32,6 +41,7 @@ import java.util.HashMap
 
 
 class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpdateListener {
+    var runningAdSn: String = ""
     val soundPool:SoundPool = SoundPool.Builder().build()
     private var context: Context = MyApplication.applicationContext()
     private var locatorClient: BLLocationProvider? = null
@@ -98,6 +108,10 @@ class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpda
     }
 
     fun startPeriodicScan() {
+        runBlocking {
+            val userModel = ApiClient.apiService.getUser("true")
+            runningAdSn = userModel.runningAdSn
+        }
 
         val filters: MutableList<ScanFilter> = ArrayList()
         runBlocking {
@@ -221,12 +235,29 @@ class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpda
 
         val data : List<LocationData> = listOf(LocationData(latitude, longitude, sttscd, time))
         runBlocking {
-            ApiClient.apiService.sendDriveLog("true", DriveLogRequest("AD_0000021",data))
+            try {
+                ApiClient.apiService.sendDriveLog("true", DriveLogRequest(runningAdSn,data))
+            } catch (e: Exception) {
+                Log.e("API ERROR", e.message.toString())
+            }
+
         }
 
     }
 
     fun startDriving() {
+        Firebase.messaging.subscribeToTopic("driving")
+                .addOnCompleteListener{ task ->
+                    var msg = "Subscribed"
+                    if(!task.isSuccessful) {
+                        msg = "Subscribed failed"
+                    }
+                    Log.d("Firebase.messaging.subscribeToTopic :: ", msg)
+                }.addOnFailureListener{ task ->
+                    var msg = "Subscribed failed"
+                    Log.d("Firebase.messaging.subscribeToTopic :: ", msg)
+                }
+
         TimerHandler.startTimer()
         isDriving = true;
         var soundId : Int = 0
@@ -237,8 +268,16 @@ class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpda
             }
         }
         Toast.makeText(context, "애드럭과 함께 운행이 시작되었습니다!", Toast.LENGTH_SHORT).show();
-
-        context.startService(Intent(context, TimerService::class.java))
+    }
+    fun acquireWakeLock() {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakelockTag")
+        wakeLock.acquire(1000 * 10)
+    }
+    fun releaseWakeLock(wakeLock: PowerManager.WakeLock) {
+        if (wakeLock.isHeld) {
+            wakeLock.release()
+        }
     }
 
     fun stopDriving() {
@@ -251,6 +290,7 @@ class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpda
             if(drivingEndCondition != null) {
                 drivingEndHandler.postDelayed({
                     if(!isLocationRunning) {
+                        Firebase.messaging.unsubscribeFromTopic("driving")
                         TimerHandler.stopTimer()
                         isDriving = false
 
@@ -270,6 +310,7 @@ class BeaconScanner(private val drivingOption: AutoDrivingOption) : LocationUpda
                     }
                 }, drivingEndCondition * 1000)
             } else {
+                Firebase.messaging.unsubscribeFromTopic("driving")
                 TimerHandler.stopTimer()
                 isDriving = false
 

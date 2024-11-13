@@ -2,10 +2,6 @@ package com.gwkim.app_template
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
-import android.widget.Toast
-import com.google.android.gms.tasks.OnCompleteListener
-import com.google.firebase.FirebaseApp
 import com.gwkim.app_template.app.auth.TokenRepository
 import com.gwkim.app_template.common.di.batteryStatusMonitoringModule
 import com.gwkim.app_template.common.di.beaconScannerModule
@@ -31,7 +27,6 @@ class MyApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        FirebaseApp.initializeApp(this)
         tokenRepository = TokenRepository(this)
 
         startKoin {
